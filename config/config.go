@@ -1,23 +1,22 @@
 package config
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
 )
 
 type Config struct {
-	IgnoredFiles []*regexp.Regexp
-	Abbrs        []string
+	IgnoreAbbrs []string
+	Abbrs       []string
 }
 
-func (c Config) IsFileIgnored(fileName string) bool {
-	fmt.Println(c.IgnoredFiles, fileName)
-	for _, ignoredFile := range c.IgnoredFiles {
-		if ignoredFile.Match([]byte(fileName)) {
+func (c Config) Violates(match string) bool {
+	for _, abbr := range c.Abbrs {
+		if strings.EqualFold(abbr, string(match)) &&
+			strings.ToUpper(string(match)) != string(match) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -25,8 +24,8 @@ type Option func(config *Config)
 
 func DefaultConfig() *Config {
 	return &Config{
-		IgnoredFiles: []*regexp.Regexp{},
-		Abbrs:        []string{"id", "http", "vat"},
+		IgnoreAbbrs: []string{},
+		Abbrs:       []string{"id", "http", "vat"},
 	}
 }
 
@@ -40,22 +39,23 @@ func WithOptions(options ...Option) *Config {
 	return c
 }
 
-func WithIgnoredFiles(excludes string) Option {
-	return func(config *Config) {
-		for _, exclude := range strings.Split(excludes, ",") {
-			if exclude != "" {
-				config.IgnoredFiles = append(config.IgnoredFiles, regexp.MustCompile(exclude))
-			}
-		}
-	}
-}
-
 func WithAbbrs(abbrs string) Option {
 	return func(config *Config) {
 		config.Abbrs = make([]string, 0)
 		for _, abbr := range strings.Split(abbrs, ",") {
 			if abbr != "" {
 				config.Abbrs = append(config.Abbrs, abbr)
+			}
+		}
+	}
+}
+
+func WithIgnoreAbbrs(abbrs string) Option {
+	return func(config *Config) {
+		config.IgnoreAbbrs = make([]string, 0)
+		for _, abbr := range strings.Split(abbrs, ",") {
+			if abbr != "" {
+				config.IgnoreAbbrs = append(config.IgnoreAbbrs, abbr)
 			}
 		}
 	}
