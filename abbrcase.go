@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/tuzgen/abbrcase/config"
 	"golang.org/x/tools/go/analysis"
@@ -36,22 +37,28 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		),
 	)
 
-	for _, file := range pass.Files {
-		ast.Inspect(file, func(node ast.Node) bool {
+	var wg sync.WaitGroup
 
-			if identifier, ok := node.(*ast.Ident); ok {
-				allMatches := regex.FindAll([]byte(identifier.String()), 10)
-				for _, match := range allMatches {
-					for _, abbr := range cfg.Abbrs {
-						if cfg.Violates(string(match)) {
-							pass.Reportf(identifier.Pos(), "use all caps abbreviations: %s should be %s", match, strings.ToUpper(abbr))
+	for _, file := range pass.Files {
+		wg.Add(1)
+		go func(f *ast.File) {
+			defer wg.Done()
+			ast.Inspect(f, func(node ast.Node) bool {
+				if identifier, ok := node.(*ast.Ident); ok {
+					allMatches := regex.FindAll([]byte(identifier.String()), 10)
+					for _, match := range allMatches {
+						for _, abbr := range cfg.Abbrs {
+							if cfg.Violates(string(match)) {
+								pass.Reportf(identifier.Pos(), "use all caps abbreviations: %s should be %s", match, strings.ToUpper(abbr))
+							}
 						}
 					}
-				}
 
-			}
-			return true
-		})
+				}
+				return true
+			})
+		}(file)
 	}
+	wg.Wait()
 	return nil, nil
 }
