@@ -43,7 +43,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		wg.Add(1)
 		go func(f *ast.File) {
 			defer wg.Done()
+			var wgInspect sync.WaitGroup
 			ast.Inspect(f, func(node ast.Node) bool {
+				wgInspect.Add(1)
+				defer wgInspect.Done()
 				if identifier, ok := node.(*ast.Ident); ok {
 					allMatches := regex.FindAll([]byte(identifier.String()), 10)
 					for _, match := range allMatches {
@@ -57,8 +60,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				}
 				return true
 			})
+			wgInspect.Wait()
 		}(file)
 	}
+
 	wg.Wait()
 	return nil, nil
 }

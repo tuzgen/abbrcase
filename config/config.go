@@ -9,14 +9,18 @@ type Config struct {
 	Abbrs       []string
 }
 
+// Violates checks if the passed string value exists in the forbidden list of abbreviations
+// If the string exists in the list, and is not lowercase or uppercase, throws false
 func (c Config) Violates(match string) bool {
 	for _, abbr := range c.Abbrs {
-		if strings.EqualFold(abbr, string(match)) &&
-			strings.ToUpper(string(match)) != string(match) {
+		if strings.EqualFold(abbr, string(match)) {
+			if strings.ToLower(string(match)) == string(match) ||
+				strings.ToUpper(string(match)) == string(match) {
+				return false
+			}
 			return true
 		}
 	}
-
 	return false
 }
 
