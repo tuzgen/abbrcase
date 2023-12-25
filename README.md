@@ -1,5 +1,5 @@
 # abbrcase
-abbrcase is a very simple Go linter that fails and reports when abbreviations in identifiers are written in all caps
+abbrcase is a very simple Go linter that fails and reports when abbreviations in identifiers are not written in all caps
 
 ## Install
 ```
